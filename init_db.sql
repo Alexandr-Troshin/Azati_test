@@ -38,7 +38,8 @@ CREATE TABLE if not exists orders_db.orders_log (
 "order_type" text not null,
 "shares" integer not null,
 "price_per_share" real not null,
-"order_dttm" timestamp not null);
+"order_dttm" timestamp not null,
+"order_action" text not null);
 
 -- функция для триггера
 
@@ -47,8 +48,8 @@ CREATE OR REPLACE FUNCTION orders_db.fn_update_transaction()
 $$
 BEGIN
 
-    insert into orders_db.orders_log(id, user_name, stock, order_type, shares, price_per_share, order_dttm)
-    VALUES (NEW.id, NEW.user_name, NEW.stock, NEW.order_type, NEW.shares, NEW.price_per_share, NEW.order_dttm);
+    insert into orders_db.orders_log(id, user_name, stock, order_type, shares, price_per_share, order_dttm, order_action)
+    VALUES (NEW.id, NEW.user_name, NEW.stock, NEW.order_type, NEW.shares, NEW.price_per_share, NEW.order_dttm, 'put');
 
 	insert into orders_db.trans_last_order
 		SELECT id, user_name, stock, order_type, shares, price_per_share, sum_shares, order_dttm
@@ -124,3 +125,23 @@ CREATE trigger  update_transaction
 AFTER INSERT ON orders_db.orders
 for each row
 EXECUTE PROCEDURE orders_db.fn_update_transaction();
+
+--- функция для логгирования удаления ордера
+
+CREATE OR REPLACE FUNCTION orders_db.fn_log_delete_order()
+  RETURNS trigger AS
+$$
+BEGIN
+    insert into orders_db.orders_log(id, user_name, stock, order_type, shares, price_per_share, order_dttm, order_action)
+    VALUES (OLD.id, OLD.user_name, OLD.stock, OLD.order_type, OLD.shares, OLD.price_per_share, OLD.order_dttm, 'delete');
+
+	RETURN new;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+CREATE trigger  log_delete_order
+AFTER DELETE ON orders_db.orders
+for each row
+WHEN (OLD.shares != -1)
+EXECUTE PROCEDURE orders_db.fn_log_delete_order();
