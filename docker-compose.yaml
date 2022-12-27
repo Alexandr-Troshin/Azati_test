@@ -1,0 +1,54 @@
+version: '2.3'
+
+services:
+
+  backend:
+    build: .
+    container_name: backend
+    environment:
+      HOST: database
+      PORT: 5432
+    command: python azati_test/manage.py runserver 0.0.0.0:8000
+#    command: gunicorn azati_test.wsgi:application --bind 0.0.0.0:8000
+    ports:
+      - 8000:8000
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - azati_test_network
+
+
+  db:
+    image: postgres:14.6
+    container_name: database
+    environment:
+      HOST: localhost
+      PORT: 5432
+      PGUSER: azati_user
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: azati_user
+      POSTGRES_PASSWORD: azati_password
+    volumes:
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    networks:
+      - azati_test_network
+    ports:
+      - "5433:5432"
+    restart: "no"
+    healthcheck:
+      test: /usr/bin/pg_isready --dbname=orders_db
+      interval: 20s
+      timeout: 20s
+      retries: 20
+
+networks:
+  azati_test_network:
+    name: azati_test_network
+
+
+#volumes:
+#  orders_book_db:
+#    name: orders_book_db
+
