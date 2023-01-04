@@ -21,6 +21,7 @@ def get_counter_orders_list(order_details: dict) -> QuerySet:
 
 
 def prepare_dict_with_details_from_post_request(request) -> dict:
+    """Функция подготовки словаря на основе данных POST запроса"""
     order_details = request.POST.dict()
     order_details['shares'] = int(order_details['shares'])
     order_details['price_per_share'] = float(order_details['price_per_share'])
@@ -29,6 +30,8 @@ def prepare_dict_with_details_from_post_request(request) -> dict:
 
 
 def _make_transaction(order_details, counter_order) -> None:
+    """Функция создания транзакции на основе поступающего и встречного заказов.
+    Транзакция сохраняется в базе данных"""
     transaction_details = {'stock': order_details['stock'],
                            'shares': min(order_details['shares'],
                                          counter_order.get('shares')),
@@ -44,6 +47,8 @@ def _make_transaction(order_details, counter_order) -> None:
 
 
 def make_trasactions_and_update_orders_list(order_details, counter_orders_list, created_order_id) -> None:
+    """Функция создания транзакций для списка встреных заказов. Транзакции сохраняется в базе данных,
+    данные об остатках закказов, не закрытых транзакциями, обновляются."""
     for counter_order in counter_orders_list:
         _make_transaction(order_details, counter_order)
         if order_details['shares'] >= counter_order['shares']:
