@@ -35,7 +35,7 @@ class OrdersDjangoViewSet(viewsets.ModelViewSet):
         дублируется в лог-таблицу, проверяется возможность совершения транзакций с существующими
         заказами, выполненные транзакции сохраняются в таблицу транзакций, данные текущего списка
         заказов обнавляются с учетом прошедших транзакций"""
-        with transaction.atomic:
+        with transaction.atomic():
             order_details = prepare_dict_with_details_from_post_request(request)
             counter_orders_list = get_counter_orders_list(order_details).values()
             created_order = OrdersDjango.objects.create(**order_details)
@@ -50,7 +50,7 @@ class OrdersDjangoViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """ Переопределение функции удаления объекта. Перед удалением объекта создает запись
          в лог-таблице с характеристиками заказа и пометкой DELETE"""
-        with transaction.atomic:
+        with transaction.atomic():
             instance = self.get_object()
             order_details = instance.__dict__
             OrdersDjangoLog.objects.create(order_id=order_details['id'],
