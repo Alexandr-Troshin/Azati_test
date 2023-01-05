@@ -1,6 +1,9 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.utils import json
 
 from .models import Orders, Transactions, OrdersDjangoLog
 from .serializer import OrdersSerializer, TransactionsSerializer, \
@@ -11,7 +14,9 @@ from .orders_services import *
 
 
 # вью-сеты для варианта с триггером
-class OrdersViewSet(viewsets.ModelViewSet):
+class OrdersViewSet(mixins.CreateModelMixin,
+                    mixins.DestroyModelMixin,
+                    viewsets.ReadOnlyModelViewSet):
     queryset = Orders.objects.all().order_by('-order_dttm')
     serializer_class = OrdersSerializer
     filter_backends = [DjangoFilterBackend]
@@ -24,7 +29,9 @@ class TransactionsViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 # вью-сеты для бизнес-логики в Django
-class OrdersDjangoViewSet(viewsets.ModelViewSet):
+class OrdersDjangoViewSet(mixins.CreateModelMixin,
+                          mixins.DestroyModelMixin,
+                          viewsets.ReadOnlyModelViewSet):
     queryset = OrdersDjango.objects.all().order_by('-order_dttm')
     serializer_class = OrdersDjangoSerializer
     filter_backends = [DjangoFilterBackend]
@@ -34,9 +41,12 @@ class OrdersDjangoViewSet(viewsets.ModelViewSet):
         """ Переопределение функции создания объекта. При создании нового заказа информация о нем
         дублируется в лог-таблицу, проверяется возможность совершения транзакций с существующими
         заказами, выполненные транзакции сохраняются в таблицу транзакций, данные текущего списка
-        заказов обнавляются с учетом прошедших транзакций"""
+        заказов обновляются с учетом прошедших транзакций"""
         with transaction.atomic():
-            order_details = prepare_dict_with_details_from_post_request(request)
+            serializer = OrdersDjangoSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            order_details = dict(serializer.validated_data)
             counter_orders_list = get_counter_orders_list(order_details).values()
             created_order = OrdersDjango.objects.create(**order_details)
             created_order_id = created_order.__dict__['id']
@@ -45,13 +55,15 @@ class OrdersDjangoViewSet(viewsets.ModelViewSet):
             if counter_orders_list:
                 make_trasactions_and_update_orders_list(order_details, counter_orders_list,
                                                         created_order_id)
-        return self.get(request)
+        return Response(OrdersDjangoSerializer(created_order).data, status=status.HTTP_201_CREATED)
+
 
     def destroy(self, request, *args, **kwargs):
         """ Переопределение функции удаления объекта. Перед удалением объекта создает запись
          в лог-таблице с характеристиками заказа и пометкой DELETE"""
         with transaction.atomic():
             instance = self.get_object()
+            order_id = instance.pk
             order_details = instance.__dict__
             OrdersDjangoLog.objects.create(order_id=order_details['id'],
                                            user_name=order_details['user_name'],
@@ -61,8 +73,9 @@ class OrdersDjangoViewSet(viewsets.ModelViewSet):
                                            order_type=order_details['order_type'],
                                            order_dttm=order_details['order_dttm'],
                                            order_action='DELETE')
-            OrdersDjango.objects.filter(pk=order_details['id']).delete()
-        return self.get(request)
+            #OrdersDjango.objects.filter(pk=order_details['id']).delete()
+            instance.delete()
+        return Response({'message' : f'Order {order_id} deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 
 class TransactionsDjangoViewSet(viewsets.ReadOnlyModelViewSet):

@@ -20,15 +20,6 @@ def get_counter_orders_list(order_details: dict) -> QuerySet:
     return filtered_meet_price_requirements_queryset.order_by(sorting_order, 'order_dttm')
 
 
-def prepare_dict_with_details_from_post_request(request) -> dict:
-    """Функция подготовки словаря на основе данных POST запроса"""
-    order_details = request.POST.dict()
-    order_details['shares'] = int(order_details['shares'])
-    order_details['price_per_share'] = float(order_details['price_per_share'])
-    del order_details['csrfmiddlewaretoken']
-    return order_details
-
-
 def _make_transaction(order_details, counter_order) -> None:
     """Функция создания транзакции на основе поступающего и встречного заказов.
     Транзакция сохраняется в базе данных"""
