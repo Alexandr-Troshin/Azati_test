@@ -1,7 +1,6 @@
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework.urlpatterns import format_suffix_patterns
-from . import views
 from .views import OrdersViewSet, TransactionsViewSet
 from .views import OrdersDjangoViewSet, TransactionsDjangoViewSet
 
@@ -12,7 +11,7 @@ router_transactions = routers.SimpleRouter()
 router_transactions.register(r'transactions', TransactionsViewSet)
 
 router_orders_django = routers.SimpleRouter()
-router_orders_django.register(r'orders_django', OrdersDjangoViewSet)
+router_orders_django.register(r'orders_django', OrdersDjangoViewSet, basename='orders_django_basename')
 
 router_transactions_django = routers.SimpleRouter()
 router_transactions_django.register(r'transactions_django', TransactionsDjangoViewSet)

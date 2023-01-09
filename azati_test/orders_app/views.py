@@ -3,14 +3,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.utils import json
 
 from .models import Orders, Transactions, OrdersDjangoLog
 from .serializer import OrdersSerializer, TransactionsSerializer, \
                         OrdersDjangoSerializer, TransactionsDjangoSerializer
 
 from .orders_services import *
-
 
 
 # вью-сеты для варианта с триггером
@@ -57,7 +55,6 @@ class OrdersDjangoViewSet(mixins.CreateModelMixin,
                                                         created_order_id)
         return Response(OrdersDjangoSerializer(created_order).data, status=status.HTTP_201_CREATED)
 
-
     def destroy(self, request, *args, **kwargs):
         """ Переопределение функции удаления объекта. Перед удалением объекта создает запись
          в лог-таблице с характеристиками заказа и пометкой DELETE"""
@@ -73,9 +70,8 @@ class OrdersDjangoViewSet(mixins.CreateModelMixin,
                                            order_type=order_details['order_type'],
                                            order_dttm=order_details['order_dttm'],
                                            order_action='DELETE')
-            #OrdersDjango.objects.filter(pk=order_details['id']).delete()
             instance.delete()
-        return Response({'message' : f'Order {order_id} deleted'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': f'Order {order_id} deleted'}, status=status.HTTP_204_NO_CONTENT)
 
 
 class TransactionsDjangoViewSet(viewsets.ReadOnlyModelViewSet):

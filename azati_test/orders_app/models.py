@@ -8,9 +8,6 @@ class OrdersDjango(models.Model):
     class Meta:
         db_table = 'orders_django'
 
-#     if request.POST:
-
-
     ORDER_TYPE_CHOICES = [
         ('BUY', 'BUY'),
         ('SELL', 'SELL')
@@ -29,6 +26,7 @@ class OrdersDjango(models.Model):
     def __str__(self):
         return str(self.user_name) + str(self.order_dttm)
 
+
 class TransactionsDjango(models.Model):
     """ Модель данных о проведенных транзакциях (используя бизнес-логику в Django)"""
     class Meta:
@@ -43,6 +41,7 @@ class TransactionsDjango(models.Model):
 
     def __str__(self):
         return str(self.stock) + str(self.trans_dttm)
+
 
 class OrdersDjangoLog(models.Model):
     """ Модель для логгирования данных о заказах (используя бизнес-логику в Django)"""
@@ -68,6 +67,7 @@ class OrdersDjangoLog(models.Model):
 
     def __str__(self):
         return str(self.user_name) + str(self.order_dttm)
+
 
 # классы таблиц для варианта с триггером
 class Orders(models.Model):
@@ -128,7 +128,6 @@ class TransLastOrder(models.Model):
     shares = models.IntegerField('shares', default=0)
     price_per_share = models.FloatField('price_per_share', default=0)
     order_type = models.CharField('order_type', max_length=4,
-                                  # choices=ORDER_TYPE_CHOICES,
                                   default='BUY')
     sum_shares = models.IntegerField('sum_shares', default=0)
     order_dttm = models.DateTimeField('order_dttm', auto_now_add=True, null=True, blank=True)
