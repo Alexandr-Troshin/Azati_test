@@ -4,7 +4,8 @@ ALTER DATABASE orders_db SET search_path TO orders_db;
 
 CREATE TABLE if not exists orders_db.orders (
 "id" serial primary key not null,
-"user_name" text not null,
+"user" integer not null,
+-- "user_name" text not null,
 "stock" text not null,
 "order_type" text not null,
 "shares" integer not null,
@@ -23,7 +24,8 @@ CREATE TABLE if not exists orders_db.transactions (
 
 CREATE TABLE if not exists orders_db.trans_last_order (
 "id" Integer not null,
-"user_name" text not null,
+"user" integer not null,
+-- "user_name" text not null,
 "stock" text not null,
 "order_type" text not null,
 "shares" integer not null,
@@ -33,7 +35,8 @@ CREATE TABLE if not exists orders_db.trans_last_order (
 
 CREATE TABLE if not exists orders_db.orders_log (
 "id" Integer not null,
-"user_name" text not null,
+"user" integer not null,
+-- "user_name" text not null,"user_name" text not null,
 "stock" text not null,
 "order_type" text not null,
 "shares" integer not null,

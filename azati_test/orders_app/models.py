@@ -1,8 +1,10 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.db import models
 
 
+# User = get_user_model()
 # классы таблиц для бизнес-логики в Django
-
 class OrdersDjango(models.Model):
     """ Модель данных о заказах (используя бизнес-логику в Django)"""
     class Meta:
@@ -14,7 +16,8 @@ class OrdersDjango(models.Model):
     ]
 
     id = models.IntegerField
-    user_name = models.CharField('user_name', max_length=30, default='')
+    user = models.ForeignKey(User, verbose_name="user", on_delete=models.DO_NOTHING, default=1)
+#    user_name = models.CharField('user_name', max_length=30, default='')
     stock = models.CharField('stock', max_length=30, default='')
     shares = models.IntegerField('shares', default=0)
     price_per_share = models.FloatField('price_per_share', default=0)
@@ -23,8 +26,9 @@ class OrdersDjango(models.Model):
                                   blank=True)
     order_dttm = models.DateTimeField('order_dttm', auto_now_add=True, null=True, blank=True)
 
+
     def __str__(self):
-        return str(self.user_name) + str(self.order_dttm)
+        return 'user' + str(self.user) + 'order_id' + str(self.order_id)
 
 
 class TransactionsDjango(models.Model):
@@ -54,8 +58,9 @@ class OrdersDjangoLog(models.Model):
     ]
 
     id = models.IntegerField
+    user = models.ForeignKey(User, verbose_name="user", on_delete=models.DO_NOTHING, default=1)
     order_id = models.IntegerField('order_id', default=0)
-    user_name = models.CharField('user_name', max_length=30, default='')
+#    user_name = models.CharField('user_name', max_length=30, default='')
     stock = models.CharField('stock', max_length=30, default='')
     shares = models.IntegerField('shares', default=0)
     price_per_share = models.FloatField('price_per_share', default=0)
@@ -66,7 +71,7 @@ class OrdersDjangoLog(models.Model):
     order_action = models.CharField('order_action', max_length=6, default='PUT')
 
     def __str__(self):
-        return str(self.user_name) + str(self.order_dttm)
+        return 'user' + str(self.user) + 'order_id' + str(self.order_id)
 
 
 # классы таблиц для варианта с триггером
@@ -82,7 +87,8 @@ class Orders(models.Model):
     ]
 
     id = models.IntegerField
-    user_name = models.CharField('user_name', max_length=30, default='')
+    user = models.ForeignKey(User, verbose_name="user", on_delete=models.DO_NOTHING, default=1)
+#    user_name = models.CharField('user_name', max_length=30, default='')
     stock = models.CharField('stock', max_length=30, default='')
     shares = models.IntegerField('shares', default=0)
     price_per_share = models.FloatField('price_per_share', default=0)
@@ -91,8 +97,9 @@ class Orders(models.Model):
                                   blank=True)
     order_dttm = models.DateTimeField('order_dttm', auto_now_add=True, null=True, blank=True)
 
+
     def __str__(self):
-        return str(self.user_name) + str(self.order_dttm)
+        return 'user' + str(self.user) + 'order_id' + str(self.order_id)
 
 
 class Transactions(models.Model):
@@ -123,7 +130,8 @@ class TransLastOrder(models.Model):
         db_table = 'trans_last_order'
         managed = False
 
-    user_name = models.CharField('user_name', max_length=30, default='')
+    user = models.ForeignKey(User, verbose_name="user", on_delete=models.DO_NOTHING, default=1)
+#    user_name = models.CharField('user_name', max_length=30, default='')
     stock = models.CharField('stock', max_length=30, default='')
     shares = models.IntegerField('shares', default=0)
     price_per_share = models.FloatField('price_per_share', default=0)
@@ -133,4 +141,4 @@ class TransLastOrder(models.Model):
     order_dttm = models.DateTimeField('order_dttm', auto_now_add=True, null=True, blank=True)
 
     def __str__(self):
-        return str(self.user_name) + str(self.order_dttm)
+        return str(self.user) + str(self.order_dttm)

@@ -1,12 +1,13 @@
 from django.db.models import QuerySet
 from .models import OrdersDjango, TransactionsDjango
+from django.contrib.auth.models import User
 
 
 def get_counter_orders_list(order_details: dict) -> QuerySet:
     """Функция возвращает queryset встречных заказов,
     с которыми можно провести транзакцию"""
     filtered_queryset = OrdersDjango.objects \
-        .exclude(user_name=order_details['user_name']) \
+        .exclude(user_id=order_details['user'].id) \
         .exclude(order_type=order_details['order_type']) \
         .filter(stock=order_details['stock'])
     if order_details['order_type'] == 'SELL':
@@ -29,11 +30,11 @@ def _make_transaction(order_details, counter_order) -> None:
                            'price_per_share': (order_details['price_per_share']
                                                + counter_order.get('price_per_share')) / 2}
     if order_details['order_type'] == 'SELL':
-        transaction_details['seller_name'] = order_details['user_name']
-        transaction_details['buyer_name'] = counter_order['user_name']
+        transaction_details['seller_name'] = order_details['user']
+        transaction_details['buyer_name'] = User.objects.get(pk=counter_order['user_id'])
     else:
-        transaction_details['buyer_name'] = order_details['user_name']
-        transaction_details['seller_name'] = counter_order['user_name']
+        transaction_details['buyer_name'] = order_details['user']
+        transaction_details['seller_name'] = User.objects.get(pk=counter_order['user_id'])
     TransactionsDjango.objects.create(**transaction_details)
 
 
