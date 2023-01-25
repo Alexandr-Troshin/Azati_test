@@ -3,10 +3,12 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from rest_framework.test import APIRequestFactory
-from django.contrib.auth.models import User
+#from django.contrib.auth.models import User
 
 from .models import OrdersDjango, OrdersDjangoLog, TransactionsDjango
 
+
+User= get_user_model()
 
 DATA_LIST = [
     {'stock': 'Tesla', 'order_type': 'SELL', 'shares': 150, 'price_per_share': 176},

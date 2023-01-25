@@ -1,9 +1,10 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User
+#from django.contrib.auth.models import User
 from django.db import models
 
 
-# User = get_user_model()
+User = get_user_model()
+
 # классы таблиц для бизнес-логики в Django
 class OrdersDjango(models.Model):
     """ Модель данных о заказах (используя бизнес-логику в Django)"""

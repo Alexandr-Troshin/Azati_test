@@ -29,6 +29,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+AUTH_USER_MODEL = 'users.CustomUser'
 
 # Application definition
 
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'rest_framework_simplejwt',
     'djoser',
+    'users'
 ]
 
 MIDDLEWARE = [
@@ -162,7 +164,10 @@ DJOSER = {
     'PASSWORD_RESET_CONFIRM_URL': '#/password/reset/confirm/{uid}/{token}',
     'USERNAME_RESET_CONFIRM_URL': '#/username/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': '#/activate/{uid}/{token}',
-    'TOKEN_MODEL': None
+    'TOKEN_MODEL': None,
+    'SERIALIZERS': {'user_create': 'users.serializers.CustomUserCreateSerializer',
+                    'user': 'users.serializers.CustomUserRetrieveSerializer'},
+    'PERMISSIONS': {'user_create': ['rest_framework.permissions.AllowAny'],}
 }
 
 SIMPLE_JWT = {

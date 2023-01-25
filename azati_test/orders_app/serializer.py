@@ -9,7 +9,7 @@ class OrdersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = Orders
-        fields = ("id", "user_name", "stock", "shares", "price_per_share", "order_type", "order_dttm")
+        fields = ("id", "user", "stock", "shares", "price_per_share", "order_type", "order_dttm")
 
 
 class TransactionsSerializer(serializers.ModelSerializer):
@@ -21,7 +21,7 @@ class TransactionsSerializer(serializers.ModelSerializer):
 class TransLastOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model  = TransLastOrder
-        fields = ("id", "user_name", "stock", "shares", "price_per_share",
+        fields = ("id", "user", "stock", "shares", "price_per_share",
                   "order_type", "sum_shares", "order_dttm")
 
 

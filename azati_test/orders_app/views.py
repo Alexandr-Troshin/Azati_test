@@ -1,23 +1,16 @@
 from django.contrib.auth import get_user_model
 from rest_framework import viewsets, mixins
-from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
-from rest_framework import status, permissions
-from rest_framework.fields import CurrentUserDefault
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from .permissions import IsOwnerOrReadOnly
-
-from rest_framework import fields, serializers
 
 from .models import Orders, Transactions, OrdersDjangoLog
 from .serializer import OrdersSerializer, TransactionsSerializer, \
     OrdersDjangoSerializer, TransactionsDjangoSerializer
 
 from .orders_services import *
-
 
 
 # вью-сеты для варианта с триггером
@@ -40,7 +33,10 @@ class OrdersDjangoViewSet(mixins.CreateModelMixin,
                           mixins.DestroyModelMixin,
                           viewsets.ReadOnlyModelViewSet):
     permission_classes = (IsOwnerOrReadOnly, )
-    queryset = OrdersDjango.objects.all().order_by('-order_dttm')
+    #queryset = OrdersDjango.objects.all().order_by('-order_dttm')
+    def get_queryset(self):
+         return OrdersDjango.objects.filter(user=self.request.user)
+
     serializer_class = OrdersDjangoSerializer
     # filter_backends = [DjangoFilterBackend]
     # filterset_fields = ['user_name']
@@ -52,19 +48,22 @@ class OrdersDjangoViewSet(mixins.CreateModelMixin,
         заказами, выполненные транзакции сохраняются в таблицу транзакций, данные текущего списка
         заказов обновляются с учетом прошедших транзакций"""
         with transaction.atomic():
+            current_user = User.objects.filter(username=request.user).first()
             serializer = OrdersDjangoSerializer(data=request.data, context={'request': request})
-#            print(request.data)
             serializer.is_valid(raise_exception=True)
-#            print(serializer.validated_data)
             order_details = dict(serializer.validated_data)
-            counter_orders_list = get_counter_orders_list(order_details).values()
-            created_order = OrdersDjango.objects.create(**order_details)
-            created_order_id = created_order.__dict__['id']
-            OrdersDjangoLog.objects.create(**order_details, order_action='PUT',
-                                           order_id=created_order_id)
-            if counter_orders_list:
-                make_trasactions_and_update_orders_list(order_details, counter_orders_list,
-                                                        created_order_id)
+            if not is_funds_enough_for_order(current_user, order_details):
+                return Response({'message': 'User have NOT enough funds to make this order'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            else:
+                counter_orders_list = get_counter_orders_list(order_details).values()
+                created_order = OrdersDjango.objects.create(**order_details)
+                created_order_id = created_order.__dict__['id']
+                OrdersDjangoLog.objects.create(**order_details, order_action='PUT',
+                                               order_id=created_order_id)
+                if counter_orders_list:
+                    make_trasactions_and_update_orders_list(order_details, counter_orders_list,
+                                                            created_order_id)
         return Response(OrdersDjangoSerializer(created_order).data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):

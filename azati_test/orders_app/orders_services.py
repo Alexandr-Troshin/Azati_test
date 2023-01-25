@@ -1,7 +1,9 @@
+from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
 from .models import OrdersDjango, TransactionsDjango
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 
+User = get_user_model()
 
 def get_counter_orders_list(order_details: dict) -> QuerySet:
     """Функция возвращает queryset встречных заказов,
@@ -21,6 +23,24 @@ def get_counter_orders_list(order_details: dict) -> QuerySet:
     return filtered_meet_price_requirements_queryset.order_by(sorting_order, 'order_dttm')
 
 
+def _change_balances_according_transaction(buyer, seller, transaction_details, order_details):
+    """Функция вносит изменения в balance_of_funds покупателя и продавца
+    в соответствии с условиями транзакции"""
+    transaction_details['seller_name'] = seller
+    seller.balance_of_funds[order_details['stock']] -= transaction_details['shares']
+    seller.balance_of_funds['money'] += transaction_details['shares'] * \
+                                        transaction_details['price_per_share']
+    seller.save()
+
+    transaction_details['buyer_name'] = buyer
+    if order_details['stock'] in buyer.balance_of_funds:
+        buyer.balance_of_funds[order_details['stock']] += transaction_details['shares']
+    else:
+        buyer.balance_of_funds[order_details['stock']] = transaction_details['shares']
+    buyer.balance_of_funds['money'] += transaction_details['shares'] * \
+                                       transaction_details['price_per_share']
+    buyer.save()
+
 def _make_transaction(order_details, counter_order) -> None:
     """Функция создания транзакции на основе поступающего и встречного заказов.
     Транзакция сохраняется в базе данных"""
@@ -30,11 +50,20 @@ def _make_transaction(order_details, counter_order) -> None:
                            'price_per_share': (order_details['price_per_share']
                                                + counter_order.get('price_per_share')) / 2}
     if order_details['order_type'] == 'SELL':
-        transaction_details['seller_name'] = order_details['user']
-        transaction_details['buyer_name'] = User.objects.get(pk=counter_order['user_id'])
+        buyer = User.objects.get(pk=counter_order['user_id'])
+        seller = User.objects.get(user=order_details['user'])
+
+        transaction_details = _change_balances_according_transaction(buyer, seller,
+                                                                     transaction_details,
+                                                                     order_details)
+
     else:
-        transaction_details['buyer_name'] = order_details['user']
-        transaction_details['seller_name'] = User.objects.get(pk=counter_order['user_id'])
+        buyer = User.objects.get(user=order_details['user'])
+        seller = User.objects.get(pk=counter_order['user_id'])
+        transaction_details = _change_balances_according_transaction(buyer, seller,
+                                                                     transaction_details,
+                                                                     order_details)
+
     TransactionsDjango.objects.create(**transaction_details)
 
 
@@ -58,3 +87,18 @@ def make_trasactions_and_update_orders_list(order_details, counter_orders_list, 
     if order_details['shares'] > 0:
         OrdersDjango.objects.filter(pk=created_order_id) \
             .update(shares=order_details['shares'])
+
+def is_funds_enough_for_order(current_user, order_details):
+    if order_details.get('order_type') == 'SELL':
+        if  ((order_details.get('stock') in current_user.balance_of_funds) and
+             (order_details.get('shares') <=
+                            current_user.balance_of_funds.get(order_details.get('stock')))):
+            return True
+        else:
+            return False
+    else:
+        if (order_details.get('shares')*order_details.get('price_per_share') <=
+                    current_user.balance_of_funds.get('money')):
+            return True
+        else:
+            return False

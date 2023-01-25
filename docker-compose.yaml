@@ -2,25 +2,25 @@ version: '2.3'
 
 services:
 
-#  backend:
-#    build: .
-#    container_name: backend
-#    environment:
-#      HOST: database
-#      PORT: 5432
-#    command: >
-#      sh -c "python azati_test/manage.py migrate &&
-#             python azati_test/manage.py runserver 0.0.0.0:8000"
-##    command: gunicorn azati_test.wsgi:application --bind 0.0.0.0:8000
-#    ports:
-#      - 8000:8000
-#    depends_on:
-#      db:
-#          condition: service_healthy
-#
-#
-#    networks:
-#      - azati_test_network
+  backend:
+    build: .
+    container_name: backend
+    environment:
+      HOST: database
+      PORT: 5432
+    command: >
+      sh -c "python azati_test/manage.py migrate &&
+             python azati_test/manage.py runserver 0.0.0.0:8000"
+#    command: gunicorn azati_test.wsgi:application --bind 0.0.0.0:8000
+    ports:
+      - 8000:8000
+    depends_on:
+      db:
+          condition: service_healthy
+
+
+    networks:
+      - azati_test_network
 
   db:
     image: postgres:14.6
