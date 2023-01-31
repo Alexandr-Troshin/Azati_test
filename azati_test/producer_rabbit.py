@@ -28,7 +28,7 @@ if __name__ == "__main__":
     channel = connection.channel()
     channel.queue_declare(queue='orders', durable=True)
 
-    for _ in range(50):
+    for _ in range(5):
         publish('put_order', ORDERS[0])
     publish('put_order', ORDERS[1])
     publish('put_order', ORDERS[1])

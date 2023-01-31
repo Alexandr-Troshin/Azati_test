@@ -78,7 +78,7 @@ def _make_transaction(order_details, counter_order) -> None:
 
 def make_trasactions_and_update_orders_list(order_details, counter_orders_list, created_order_id) -> None:
     """Функция создания транзакций для списка встреных заказов. Транзакции сохраняется в базе данных,
-    данные об остатках закказов, не закрытых транзакциями, обновляются."""
+    данные об остатках заказов, не закрытых транзакциями, обновляются."""
     for counter_order in counter_orders_list:
         _make_transaction(order_details, counter_order)
         if order_details['shares'] >= counter_order['shares']:
@@ -98,6 +98,7 @@ def make_trasactions_and_update_orders_list(order_details, counter_orders_list, 
             .update(shares=order_details['shares'])
 
 def is_funds_enough_for_order(current_user, order_details):
+    print(current_user.__dict__)
     if order_details.get('order_type') == 'SELL':
         if  ((order_details.get('stock') in current_user.balance_of_funds) and
              (order_details.get('shares') <=

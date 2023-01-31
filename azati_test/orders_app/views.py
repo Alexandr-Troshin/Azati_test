@@ -102,7 +102,7 @@ class RabbitMQView(APIView):
 
     def post(self, *args, **kwargs):
         credentials = pika.PlainCredentials('rabbit', 'rabbit_password')
-        conn_params = pika.ConnectionParameters('127.0.0.1',
+        conn_params = pika.ConnectionParameters('rabbitmq3', # '127.0.0.1',
                                                 5672,
                                                 '/',
                                                 credentials)
