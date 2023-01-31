@@ -11,10 +11,11 @@ class CustomUserManager(BaseUserManager):
         """Create and save a User with the given username and password."""
         if not username:
             raise ValueError('The Username must be set')
-        extra_fields.setdefault('is_staff', False)
-        extra_fields.setdefault('is_superuser', False)
-        extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('balance_of_funds', json.dumps({'money': 0}))
+        if not extra_fields.get('is_staff'):
+            extra_fields.setdefault('is_staff', False)
+            extra_fields.setdefault('is_superuser', False)
+            extra_fields.setdefault('is_active', True)
+            extra_fields.setdefault('balance_of_funds', json.dumps({'money': 0}))
         user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save()
@@ -33,3 +34,5 @@ class CustomUserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
         return self.create_user(username, password, **extra_fields)
+
+

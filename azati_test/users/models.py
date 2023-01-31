@@ -23,6 +23,12 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
+    def get_short_name(self):
+        return self.username
+
+    def natural_key(self):
+        return self.username
+
     def __str__(self):
         return self.username
 

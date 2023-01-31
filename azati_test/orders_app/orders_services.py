@@ -1,7 +1,14 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import QuerySet
-from .models import OrdersDjango, TransactionsDjango
+from .models import OrdersDjango, TransactionsDjango, OrdersDjangoLog
+from rest_framework import status
+from rest_framework.response import Response
+
+from .serializer import OrdersDjangoSerializer
+
 # from django.contrib.auth.models import User
+
 
 User = get_user_model()
 
@@ -40,6 +47,7 @@ def _change_balances_according_transaction(buyer, seller, transaction_details, o
     buyer.balance_of_funds['money'] += transaction_details['shares'] * \
                                        transaction_details['price_per_share']
     buyer.save()
+    return transaction_details
 
 def _make_transaction(order_details, counter_order) -> None:
     """Функция создания транзакции на основе поступающего и встречного заказов.
@@ -49,21 +57,22 @@ def _make_transaction(order_details, counter_order) -> None:
                                          counter_order.get('shares')),
                            'price_per_share': (order_details['price_per_share']
                                                + counter_order.get('price_per_share')) / 2}
+    print(transaction_details)
     if order_details['order_type'] == 'SELL':
         buyer = User.objects.get(pk=counter_order['user_id'])
-        seller = User.objects.get(user=order_details['user'])
+        seller = User.objects.get(username=order_details['user'].username)
 
         transaction_details = _change_balances_according_transaction(buyer, seller,
                                                                      transaction_details,
                                                                      order_details)
 
     else:
-        buyer = User.objects.get(user=order_details['user'])
+        buyer = User.objects.get(username=order_details['user'].username)
         seller = User.objects.get(pk=counter_order['user_id'])
         transaction_details = _change_balances_according_transaction(buyer, seller,
                                                                      transaction_details,
                                                                      order_details)
-
+    print(transaction_details)
     TransactionsDjango.objects.create(**transaction_details)
 
 
@@ -102,3 +111,30 @@ def is_funds_enough_for_order(current_user, order_details):
             return True
         else:
             return False
+
+
+def create_from_queue(order_dict, *args, **kwargs):
+    """Функция получения orders из очереди RabbitMQ. При создании нового заказа информация о нем
+    дублируется в лог-таблицу, проверяется возможность совершения транзакций с существующими
+    заказами, выполненные транзакции сохраняются в таблицу транзакций, данные текущего списка
+    заказов обновляются с учетом прошедших транзакций"""
+    with transaction.atomic():
+        current_user = User.objects.filter(username=order_dict['user']).first()
+        order_details = order_dict
+        print(order_details)
+        order_details['user'] = current_user
+        if not is_funds_enough_for_order(current_user, order_details):
+            print('Not enough funds')
+            return Response({'message': 'User have NOT enough funds to make this order'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        else:
+            counter_orders_list = get_counter_orders_list(order_details).values()
+            created_order = OrdersDjango.objects.create(**order_details)
+            created_order_id = created_order.__dict__['id']
+            OrdersDjangoLog.objects.create(**order_details, order_action='PUT',
+                                           order_id=created_order_id)
+            if counter_orders_list:
+                make_trasactions_and_update_orders_list(order_details, counter_orders_list,
+                                                        created_order_id)
+            print(OrdersDjangoSerializer(created_order).data)
+    return Response(OrdersDjangoSerializer(created_order).data, status=status.HTTP_201_CREATED)

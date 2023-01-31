@@ -1,14 +1,19 @@
+import json
+
 from django.contrib.auth import get_user_model
 from rest_framework import viewsets, mixins
 from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from .permissions import IsOwnerOrReadOnly
 
 from .models import Orders, Transactions, OrdersDjangoLog
 from .serializer import OrdersSerializer, TransactionsSerializer, \
     OrdersDjangoSerializer, TransactionsDjangoSerializer
+import pika
 
 from .orders_services import *
 
@@ -90,3 +95,38 @@ class TransactionsDjangoViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticated,)
     queryset = TransactionsDjango.objects.all()
     serializer_class = TransactionsDjangoSerializer
+
+
+class RabbitMQView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, *args, **kwargs):
+        credentials = pika.PlainCredentials('rabbit', 'rabbit_password')
+        conn_params = pika.ConnectionParameters('127.0.0.1',
+                                                5672,
+                                                '/',
+                                                credentials)
+
+        def start_consumer():
+            connection = pika.BlockingConnection(conn_params)
+            channel = connection.channel()
+            channel.queue_declare(queue='orders', durable=True)
+
+            # method = 'put_order'
+
+            def callback(ch, method, properties, body):
+                if properties.content_type == 'put_order':
+                    print(" [x] Received:", body)
+                    order_dict = json.loads(body.decode())
+                    create_from_queue(order_dict)
+                    print(" [x] Received:", body.decode())
+                elif properties.content_type == 'stop_consuming':
+                    channel.stop_consuming('0')
+                    quit()
+
+            channel.basic_consume(queue='orders', on_message_callback=callback, auto_ack=True)
+
+            print(' [*] Waiting for messages. To exit press CTRL+C')
+            channel.start_consuming()
+
+        start_consumer()

@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework import routers
-from .views import OrdersViewSet, TransactionsViewSet
+from .views import OrdersViewSet, TransactionsViewSet, RabbitMQView
 from .views import OrdersDjangoViewSet, TransactionsDjangoViewSet
 
 
@@ -22,4 +22,5 @@ urlpatterns = [
     path('', include(router_transactions.urls)),
     path('', include(router_orders_django.urls)),
     path('', include(router_transactions_django.urls)),
+    path('rabbitmq/', RabbitMQView.as_view())
 ]

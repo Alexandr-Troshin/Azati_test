@@ -23,7 +23,8 @@ class CustomUsersRetrieveViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsOwner, ]
 
     def get_queryset(self):
-        return User.objects.filter(username=self.request.user)
+        return User.objects.filter(pk=self.request.parser_context['kwargs']['pk'])\
+                            .filter(username=self.request.user)
 
     serializer_class = CustomUserRetrieveSerializer
 
@@ -33,8 +34,8 @@ class CustomUsersUpdateFundsViewSet(mixins.UpdateModelMixin, viewsets.ReadOnlyMo
     permission_classes = [IsOwner, ]
 
     def get_queryset(self):
-        print(self.request.user)
-        return User.objects.filter(username=self.request.user).first()
+        return User.objects.filter(pk=self.request.parser_context['kwargs']['pk'])\
+                                    .filter(username=self.request.user).first()
 
     serializer_class = CustomUserUpdateFundsSerializer
 
